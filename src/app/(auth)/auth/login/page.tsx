@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-// import { signIn } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -20,33 +20,32 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get("callbackUrl") || "/member/dashboard";
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast("testing...");
+    
+    setError("");
+    setIsLoading(true);
 
-    // setError("");
-    // setIsLoading(true);
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    // try {
-    //   const res = await signIn("credentials", {
-    //     email,
-    //     password,
-    //     redirect: false,
-    //   });
-
-    //   if (res?.ok) {
-    //     toast.success("Đăng nhập thành công!");
-    //     router.push(callbackUrl);
-    //     router.refresh();
-    //   } else {
-    //     setError("Email hoặc mật khẩu không chính xác");
-    //     toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.");
-    //   }
-    // } catch (err) {
-    //   console.error("Login error:", err);
-    //   setError("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
-    //   toast.error("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
-    // } finally {
-    //   setIsLoading(false);
-    // }
+      if (res?.ok) {
+        toast.success("Đăng nhập thành công!");
+        router.push(callbackUrl);
+        router.refresh();
+      } else {
+        setError("Email hoặc mật khẩu không chính xác");
+        toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
+      toast.error("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

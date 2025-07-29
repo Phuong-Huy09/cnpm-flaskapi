@@ -49,8 +49,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // Placeholder for API call to register
-      // Replace with actual API call when backend is ready
+      // Call the register API endpoint
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
