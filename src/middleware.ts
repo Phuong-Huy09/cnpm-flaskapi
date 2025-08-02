@@ -14,9 +14,9 @@ export async function middleware(req) {
   }
 
   // Đã login mà vào /auth thì đẩy về dashboard
-  if (token && isAuthPage) {
-    return NextResponse.redirect(new URL("/member/dashboard", req.url));
-  }
+  // if (token && isAuthPage) {
+  //   return NextResponse.redirect(new URL("/member/dashboard", req.url));
+  // }
 
   // Check token expiry
   if (token && token.expiresAt) {

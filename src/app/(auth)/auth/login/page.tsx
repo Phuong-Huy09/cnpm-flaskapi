@@ -17,7 +17,7 @@ export default function LoginPage() {
   
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/member/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") || "/admin";
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -25,17 +25,21 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      console.log("Attempting login with:", { email });
       const res = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
+      console.log("Login response:", res);
+
       if (res?.ok) {
         toast.success("Đăng nhập thành công!");
         router.push(callbackUrl);
         router.refresh();
       } else {
+        console.error("Login failed:", res?.error);
         setError("Email hoặc mật khẩu không chính xác");
         toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.");
       }
