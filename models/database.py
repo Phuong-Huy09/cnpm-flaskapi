@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Date, DECIMAL, ForeignKey, func
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 
-# Lớp cơ sở mà tất cả các models của bạn sẽ kế thừa
+# Lớp cơ sở mà tất cả các models của chúng ta sẽ kế thừa
 Base = declarative_base()
 
 # --- 1. HỆ THỐNG TÀI KHOẢN ---
