@@ -20,26 +20,31 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get("callbackUrl") || "/admin";
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+      
     setError("");
     setIsLoading(true);
 
     try {
-      console.log("Attempting login with:", { email });
       const res = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
-      console.log("Login response:", res);
-
       if (res?.ok) {
-        toast.success("Đăng nhập thành công!");
-        router.push(callbackUrl);
-        router.refresh();
+        const sess = await fetch("/api/auth/session")
+          .then(r => r.json())
+          .catch(() => null);
+
+        if (sess?.accessToken) {
+          toast.success("Đăng nhập thành công!");
+          router.push(callbackUrl);
+          router.refresh();
+        } else {
+          setError("Đăng nhập thất bại. Vui lòng thử lại.");
+          toast.error("Đăng nhập thất bại. Vui lòng thử lại.");
+        }
       } else {
-        console.error("Login failed:", res?.error);
         setError("Email hoặc mật khẩu không chính xác");
         toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.");
       }

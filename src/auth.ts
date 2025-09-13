@@ -61,7 +61,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 
     const refreshed = await response.json();
 
-    if (!response.ok || !refreshed.access_token) {
+    if (!response.ok || !refreshed?.success || !refreshed?.data?.access_token) {
       console.error("🔴 REFRESH FAIL", {
         status: response.status,
         body: refreshed,
@@ -75,9 +75,9 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 
     return {
       ...token,
-      accessToken: refreshed.access_token,
-      refreshToken: refreshed.refresh_token ?? token.refreshToken,
-      tokenExpiry: Date.now() + (refreshed.expires_in * 1000 || 3600 * 1000),
+      accessToken: refreshed.data.access_token,
+      refreshToken: refreshed.data.refresh_token ?? token.refreshToken,
+      tokenExpiry: Date.now() + (3600 * 1000), // 1 hour default
     };
   } catch (err) {
     console.error("🔴 RefreshAccessTokenError:", err);
@@ -96,63 +96,46 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      authorize: async (credentials) => {
-        try {
-          console.log("🔵 Authorize attempt with:", { 
-            email: credentials?.email,
-            apiUrl: `${API_BASE_URL}/auth/login`
-          });
-          
-          const loginRes = await fetch(`${API_BASE_URL}/auth/login`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify({
-              email: credentials?.email,
-              password: credentials?.password,
-            }),
-          });
+    authorize: async (credentials) => {
+      try {
+        if (!credentials?.email || !credentials?.password) return null;
 
-          const loginData = await loginRes.json();
+        const loginRes = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            email: credentials.email,
+            password: credentials.password,
+          }),
+        });
 
-          if (!loginRes.ok || !loginData?.access_token) {
-            console.error("🔴 Login failed:", { 
-              status: loginRes.status,
-              data: loginData 
-            });
-            return null;
-          }
+        let loginData: any = null;
+        try { loginData = await loginRes.json(); } catch { /* body rỗng -> fail */ }
 
-          const userRes = await fetch(`${API_BASE_URL}/auth/me`, {
-            method: "GET",
-            headers: {
-              "Authorization": `Bearer ${loginData.access_token}`,
-              "Accept": "application/json"
-            },
-          });
-
-          const userData = await userRes.json();
-
-          if (!userRes.ok || !userData?.id || !userData?.email) {
-            console.error("🔴 User info fetch failed:", userData);
-            return null;
-          }
-          console.log("Login successful for:", userData.email);
-         
-          return {
-            id: userData.id,
-            name: userData.name ?? userData.email,
-            email: userData.email,
-            accessToken: loginData.access_token,
-            refreshToken: loginData.refresh_token ?? null,
-          };
-        } catch (err) {
-          console.error("🔥 Authorize error:", err);
-          return null;
+        // CHỈ thành công khi: HTTP 2xx && success === true && có access_token
+        const ok = loginRes.ok && loginData?.success === true && loginData?.data?.access_token;
+        if (!ok) {
+          console.error("🔴 Login failed", { status: loginRes.status, body: loginData });
+          return null; // Quan trọng: trả null để NextAuth hiểu là thất bại
         }
-      },
+
+        const user = loginData.data.user;
+        if (!user?.id || !user?.email) return null;
+
+        return {
+          id: String(user.id),
+          name: user.username ?? user.email,
+          email: user.email,
+          accessToken: loginData.data.access_token,
+          refreshToken: loginData.data.refresh_token ?? null,
+          tokenExpiry: Date.now() + 3600_000,
+        };
+      } catch (e) {
+        console.error("🔥 Authorize error", e);
+        return null; // luôn null khi có exception
+      }
+    }
+
     }),
   ],
   callbacks: {
@@ -206,7 +189,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           ...session.user,
           id: token.user.id,
           name: token.user.name,
-          email: token.user.email,
+          email: token.user.email || "",
         };
       }
       
