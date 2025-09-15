@@ -190,6 +190,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: token.user.id,
           name: token.user.name,
           email: token.user.email || "",
+          // role: token.user.role || "",
         };
       }
       

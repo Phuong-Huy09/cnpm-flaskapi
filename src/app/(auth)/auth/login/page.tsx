@@ -38,7 +38,14 @@ export default function LoginPage() {
 
         if (sess?.accessToken) {
           toast.success("Đăng nhập thành công!");
-          router.push(callbackUrl);
+          // if(sess.user?.role === 'Tutor') {
+          //   router.push('/tutor/settings');
+          //   router.refresh();
+          //   return;
+          // }
+          router.push('/tutor/settings');
+
+          // router.push(callbackUrl);
           router.refresh();
         } else {
           setError("Đăng nhập thất bại. Vui lòng thử lại.");
