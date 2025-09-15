@@ -13,15 +13,17 @@ export default function RegisterPage() {
     fullName: "",
     email: "",
     password: "",
-    confirmPassword: "",
+  confirmPassword: "",
+  role: "Student",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   
   const router = useRouter();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const target = e.target as HTMLInputElement | HTMLSelectElement;
+    const { id, value } = target;
     setFormData(prev => ({
       ...prev,
       [id]: value
@@ -59,6 +61,7 @@ export default function RegisterPage() {
           fullName: formData.fullName,
           email: formData.email,
           password: formData.password,
+          role: formData.role,
         }),
       });
 
@@ -102,6 +105,21 @@ export default function RegisterPage() {
                 disabled={isLoading}
                 required
               />
+            </div>
+
+            <div>
+              <Label htmlFor="role">Vai trò</Label>
+              <select
+                id="role"
+                value={formData.role}
+                onChange={handleChange}
+                disabled={isLoading}
+                className="block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              >
+                <option value="Student">Student</option>
+                <option value="Tutor">Tutor</option>
+              </select>
             </div>
 
             <div>

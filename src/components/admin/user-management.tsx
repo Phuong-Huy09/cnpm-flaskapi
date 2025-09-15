@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { MoreHorizontal, UserCheck, UserX, Eye } from "lucide-react"
+import { MoreHorizontal, UserCheck, UserX, Edit2, Trash2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { UserManagement } from "@/lib/api/users"
 
@@ -44,10 +44,11 @@ function formatVND(amount?: number) {
 interface UserManagementProps {
     users: UserManagement[]
     onUpdateStatus: (userId: string, status: Status) => void
-    onViewUser: (userId: string) => void
+    onEditUser: (userId: string) => void
+    onDeleteUser: (userId: string) => void
 }
 
-export function UserManagementTable({ users, onUpdateStatus, onViewUser }: UserManagementProps) {
+export function UserManagementTable({ users, onUpdateStatus, onEditUser, onDeleteUser }: UserManagementProps) {
     return (
         <div className="rounded-md border">
                 <Table>
@@ -58,7 +59,6 @@ export function UserManagementTable({ users, onUpdateStatus, onViewUser }: UserM
                             <TableHead>Trạng thái</TableHead>
                             <TableHead className="hidden lg:table-cell">Ngày tham gia</TableHead>
                             <TableHead className="hidden lg:table-cell">Hoạt động cuối</TableHead>
-                            <TableHead className="hidden md:table-cell">Thống kê</TableHead>
                             <TableHead className="w-[48px]" />
                         </TableRow>
                     </TableHeader>
@@ -105,17 +105,6 @@ export function UserManagementTable({ users, onUpdateStatus, onViewUser }: UserM
                                             {formatDateSafe(user.lastActive)}
                                         </TableCell>
 
-                                        <TableCell className="hidden md:table-cell">
-                                            <div className="text-sm leading-5">
-                                                {typeof user.totalBookings === "number" && (
-                                                    <div>Booking: {user.totalBookings}</div>
-                                                )}
-                                                {typeof user.totalEarnings === "number" && (
-                                                    <div>Thu nhập: {formatVND(user.totalEarnings)}</div>
-                                                )}
-                                            </div>
-                                        </TableCell>
-
                                         <TableCell>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -123,26 +112,31 @@ export function UserManagementTable({ users, onUpdateStatus, onViewUser }: UserM
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-44">
-                                                    <DropdownMenuItem onClick={() => onViewUser(user.id)}>
-                                                        <Eye className="mr-2 h-4 w-4" />
-                                                        Xem chi tiết
-                                                    </DropdownMenuItem>
-
-                                                    {user.status !== "active" && (
-                                                        <DropdownMenuItem onClick={() => onUpdateStatus(user.id, "active")}>
-                                                            <UserCheck className="mr-2 h-4 w-4" />
-                                                            Kích hoạt
+                                                    <DropdownMenuContent align="end" className="w-44">
+                                                        <DropdownMenuItem onClick={() => onEditUser(user.id)}>
+                                                            <Edit2 className="mr-2 h-4 w-4" />
+                                                            Chỉnh sửa
                                                         </DropdownMenuItem>
-                                                    )}
 
-                                                    {user.status !== "suspended" && (
-                                                        <DropdownMenuItem onClick={() => onUpdateStatus(user.id, "suspended")}>
-                                                            <UserX className="mr-2 h-4 w-4" />
-                                                            Tạm khóa
+                                                        <DropdownMenuItem onClick={() => onDeleteUser(user.id)}>
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Xóa
                                                         </DropdownMenuItem>
-                                                    )}
-                                                </DropdownMenuContent>
+
+                                                        {user.status !== "active" && (
+                                                            <DropdownMenuItem onClick={() => onUpdateStatus(user.id, "active")}>
+                                                                <UserCheck className="mr-2 h-4 w-4" />
+                                                                Kích hoạt
+                                                            </DropdownMenuItem>
+                                                        )}
+
+                                                        {user.status !== "suspended" && (
+                                                            <DropdownMenuItem onClick={() => onUpdateStatus(user.id, "suspended")}>
+                                                                <UserX className="mr-2 h-4 w-4" />
+                                                                Tạm khóa
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                    </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
                                     </TableRow>

@@ -4,6 +4,7 @@ export interface ApiUser {
   email: string
   username: string | null
   status: "active" | "suspended" | "pending"
+  role: "student" | "tutor" | "moderator" | "admin" | null
   created_at: string
   updated_at: string
 }
@@ -102,9 +103,47 @@ export function convertApiUserToUserManagement(apiUser: ApiUser): UserManagement
     id: apiUser.id.toString(),
     name: apiUser.username || apiUser.email.split('@')[0] || 'N/A',
     email: apiUser.email,
-    role: "student", // Default role, you might want to add role field to API
+    role: apiUser.role || 'student', // Default role, you might want to add role field to API
     status: apiUser.status,
     joinDate: new Date(apiUser.created_at),
     lastActive: new Date(apiUser.updated_at),
+  }
+}
+
+export async function updateUser(
+  userId: string,
+  payload: { name?: string; email?: string; role?: string; status?: string }
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+    const result = await response.json()
+    return result.success ?? true
+  } catch (err) {
+    console.error('Error updating user:', err)
+    return false
+  }
+}
+
+export async function deleteUser(userId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+    const result = await response.json()
+    return result.success ?? true
+  } catch (err) {
+    console.error('Error deleting user:', err)
+    return false
   }
 }

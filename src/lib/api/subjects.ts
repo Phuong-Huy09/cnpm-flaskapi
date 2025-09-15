@@ -7,6 +7,13 @@ export interface ApiSubject {
   updated_at: string
 }
 
+export interface Subject {
+  id: number
+  name: string
+  level?: string
+  code?: string
+}
+
 export interface SubjectsApiResponse {
   success: boolean
   message: string
@@ -22,7 +29,9 @@ export interface SubjectsApiResponse {
 export interface SubjectApiResponse {
   success: boolean
   message: string
-  data: ApiSubject
+  data: {
+    subject: ApiSubject
+  }
 }
 
 export interface SubjectManagement {
@@ -231,5 +240,47 @@ export function convertSubjectManagementToSubject(subjectManagement: SubjectMana
     id: subjectManagement.id,
     name: subjectManagement.name,
     level: subjectManagement.level,
+  }
+}
+
+// SubjectAPI class for consistent API interface
+export class SubjectAPI {
+  static async getSubjectById(id: number): Promise<SubjectApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/subjects/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const json = await response.json()
+    // Nếu backend trả về data.subject thì lấy subject, nếu trả về data là object subject thì lấy luôn data
+    let subject: Subject | undefined = undefined
+    if (json.data) {
+      if (json.data.subject) {
+        subject = json.data.subject
+      } else {
+        subject = json.data
+      }
+    }
+    return {
+      ...json,
+      data: {
+        subject: subject
+      }
+    }
+  }
+
+  static async getSubjects(params?: {
+    keyword?: string
+    level?: string
+    page?: number
+    per_page?: number
+  }): Promise<SubjectsApiResponse> {
+    return fetchSubjects(params)
   }
 }

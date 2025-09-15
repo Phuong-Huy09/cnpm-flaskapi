@@ -17,9 +17,12 @@ import { UsersPagination } from "@/components/admin/users-pagination"
 import {
   fetchUsers,
   updateUserStatus,
+  updateUser,
   convertApiUserToUserManagement,
+  deleteUser,
   type UserManagement,
 } from "@/lib/api/users"
+import UserEditModal from "@/components/admin/user-edit"
 
 export default function UsersPage() {
   const router = useRouter()
@@ -109,8 +112,42 @@ export default function UsersPage() {
   }
 
   const handleViewUser = (userId: string) => {
-    console.log("View user:", userId)
-    // router.push(`/admin/users/${userId}`)
+    // Open edit modal for the user
+    const u = users.find((x) => x.id === userId)
+    if (u) {
+      setEditingUser(u)
+      setIsEditOpen(true)
+    }
+  }
+
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<UserManagement | null>(null)
+
+  const handleCloseEdit = () => {
+    setIsEditOpen(false)
+    setEditingUser(null)
+  }
+
+  const handleSaveUser = async (payload: { id: string; name?: string; email?: string }) => {
+    try {
+      const ok = await updateUser(payload.id, { name: payload.name, email: payload.email })
+      if (ok) {
+        await loadUsers({ page: pagination.page, per_page: pagination.per_page, keyword: currentFilters.keyword, status: currentFilters.status })
+      }
+      return ok
+    } catch (err) {
+      console.error(err)
+      return false
+    }
+  }
+
+  const handleDeleteUser = async (userId: string) => {
+    const ok = await deleteUser(userId)
+    if (ok) {
+      await loadUsers({ page: pagination.page, per_page: pagination.per_page })
+    } else {
+      setError('Không thể xóa người dùng')
+    }
   }
 
   const handleSearch = (filters: {
@@ -163,7 +200,8 @@ export default function UsersPage() {
         <UserManagementTable
           users={users}
           onUpdateStatus={handleUpdateUserStatus}
-          onViewUser={handleViewUser}
+          onEditUser={(id) => handleViewUser(id)}
+          onDeleteUser={(id) => handleDeleteUser(id)}
         />
         
         {loading && (
@@ -183,6 +221,7 @@ export default function UsersPage() {
           />
         )}
       </div>
+  <UserEditModal open={isEditOpen} onClose={handleCloseEdit} user={editingUser ?? undefined} onSave={handleSaveUser} />
     </>
   )
 }

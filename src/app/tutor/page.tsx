@@ -138,7 +138,7 @@ export default function StudentProfilePage() {
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Hồ sơ học viên</h1>
+        <h1 className="text-3xl font-bold mb-2">Bảng tổng quan</h1>
         <p className="text-muted-foreground">
           Chào mừng {currentStudent?.name || currentStudent?.email}! Quản lý thông tin cá nhân của bạn
         </p>
