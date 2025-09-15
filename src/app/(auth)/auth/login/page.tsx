@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -14,13 +14,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  
+
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/admin";
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-      
+
     setError("");
     setIsLoading(true);
 
@@ -31,30 +32,37 @@ export default function LoginPage() {
         redirect: false,
       });
 
-      if (res?.ok) {
-        const sess = await fetch("/api/auth/session")
-          .then(r => r.json())
-          .catch(() => null);
-
-        if (sess?.accessToken) {
-          toast.success("Đăng nhập thành công!");
-          // if(sess.user?.role === 'Tutor') {
-          //   router.push('/tutor/settings');
-          //   router.refresh();
-          //   return;
-          // }
-          router.push('/tutor/settings');
-
-          // router.push(callbackUrl);
-          router.refresh();
-        } else {
-          setError("Đăng nhập thất bại. Vui lòng thử lại.");
-          toast.error("Đăng nhập thất bại. Vui lòng thử lại.");
-        }
-      } else {
+      if (!res?.ok) {
         setError("Email hoặc mật khẩu không chính xác");
         toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.");
+        return;
       }
+
+      const sess = await getSession();
+
+      if (!sess?.user) {
+        setError("Không lấy được session.");
+        toast.error("Đăng nhập thất bại. Vui lòng thử lại.");
+        return;
+      }
+
+      toast.success(`Xin chào ${sess.user.email}`);
+
+      switch (sess.user.role) {
+        case "Tutor":
+          router.push("/tutor/settings");
+          break;
+        case "Student":
+          router.push("/student");
+          break;
+        case "Admin":
+          router.push("/admin/users");
+          break;
+        default:
+          router.push(callbackUrl);
+      }
+
+      router.refresh();
     } catch (err) {
       console.error("Login error:", err);
       setError("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
@@ -115,7 +123,6 @@ export default function LoginPage() {
                   Ghi nhớ đăng nhập
                 </label>
               </div>
-              
               <div className="text-sm">
                 <Link href="/auth/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
                   Quên mật khẩu?
@@ -130,11 +137,7 @@ export default function LoginPage() {
             )}
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isLoading}
-          >
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
         </form>

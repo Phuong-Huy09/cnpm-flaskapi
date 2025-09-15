@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-
+import { toast } from "sonner"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -128,15 +128,17 @@ export default function UsersPage() {
     setEditingUser(null)
   }
 
-  const handleSaveUser = async (payload: { id: string; name?: string; email?: string }) => {
+  const handleSaveUser = async (payload: { id: string; username?: string; email?: string; role?: string }) => {
     try {
-      const ok = await updateUser(payload.id, { name: payload.name, email: payload.email })
+      const ok = await updateUser(payload.id, { username: payload.username, email: payload.email, role: payload.role })
       if (ok) {
         await loadUsers({ page: pagination.page, per_page: pagination.per_page, keyword: currentFilters.keyword, status: currentFilters.status })
+        toast.success('Cập nhật người dùng thành công')
       }
       return ok
     } catch (err) {
-      console.error(err)
+      toast.error('Cập nhật người dùng thất bại')
+      console.error('Error updating user:', err)
       return false
     }
   }

@@ -15,6 +15,7 @@ declare module "next-auth" {
       id: string;
       name?: string;
       email?: string;
+      role?: string;
     } & DefaultSession["user"];
     error?: string | null;
   }
@@ -23,6 +24,7 @@ declare module "next-auth" {
     id: string;
     name?: string;
     email?: string;
+    role?: string;
     accessToken?: string;
     refreshToken?: string;
     tokenExpiry?: number;
@@ -39,6 +41,7 @@ declare module "next-auth/jwt" {
       id: string;
       name?: string;
       email?: string;
+      role?: string;
     };
     error?: string;
   }
@@ -126,6 +129,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: String(user.id),
           name: user.username ?? user.email,
           email: user.email,
+          role: user.role || "Student",
           accessToken: loginData.data.access_token,
           refreshToken: loginData.data.refresh_token ?? null,
           tokenExpiry: Date.now() + 3600_000,
@@ -151,6 +155,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             id: user.id,
             name: user.name,
             email: user.email,
+            role: user.role || "Student",
           },
         };
       }
@@ -190,7 +195,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: token.user.id,
           name: token.user.name,
           email: token.user.email || "",
-          // role: token.user.role || "",
+          role: token.user.role || "Student",
         };
       }
       

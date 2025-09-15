@@ -24,6 +24,7 @@ export interface UsersApiResponse {
 export interface UserManagement {
   id: string
   name: string
+  username: string | null
   email: string
   role: "student" | "tutor" | "moderator" | "admin"
   status: "active" | "suspended" | "pending"
@@ -112,7 +113,7 @@ export function convertApiUserToUserManagement(apiUser: ApiUser): UserManagement
 
 export async function updateUser(
   userId: string,
-  payload: { name?: string; email?: string; role?: string; status?: string }
+  payload: { username?: string; email?: string; role?: string; status?: string }
 ): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}/users/${userId}`, {

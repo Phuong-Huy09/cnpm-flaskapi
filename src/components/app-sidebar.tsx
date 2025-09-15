@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-
+import { usePathname } from "next/navigation"
 import { VersionSwitcher } from "@/components/version-switcher"
 import {
   Sidebar,
@@ -16,7 +16,15 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { usePathname } from "next/navigation"
+import {
+  Users,
+  BookOpen,
+  GraduationCap,
+  UserRound,
+  CalendarCheck,
+  Star,
+  Settings,
+} from "lucide-react"
 
 // Move nav data ra file riêng nếu muốn reuse
 const navData = {
@@ -24,8 +32,11 @@ const navData = {
     {
       title: "Menu",
       items: [
-        { title: "Quản lí người dùng", url: "/admin/users" },
-        { title: "Môn học", url: "/admin/subjects" },
+        { title: "Quản lí người dùng", url: "/admin/users", icon: Users },
+        { title: "Quản lí Môn học", url: "/admin/subjects", icon: BookOpen },
+        { title: "Quản lí booking", url: "/admin/bookings", icon: CalendarCheck },
+        { title: "Quản lí đánh giá", url: "/admin/reviews", icon: Star },
+        { title: "Cài đặt hệ thống", url: "/admin/settings", icon: Settings },
       ],
     },
   ],
@@ -37,7 +48,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <VersionSwitcher/>
+        <VersionSwitcher />
       </SidebarHeader>
       <SidebarContent>
         {navData.navMain.map((group) => (
@@ -47,10 +58,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenu>
                 {group.items.map((item) => {
                   const isActive = pathname.startsWith(item.url)
+                  const Icon = item.icon
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild isActive={isActive}>
-                        <Link href={item.url}>{item.title}</Link>
+                        <Link href={item.url} className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )
