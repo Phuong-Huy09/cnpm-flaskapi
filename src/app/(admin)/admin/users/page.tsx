@@ -14,6 +14,7 @@ import {
 import { UserManagementTable } from "@/components/admin/user-management"
 import { UsersFilters } from "@/components/admin/users-filters"
 import { UsersPagination } from "@/components/admin/users-pagination"
+import UserCreateModal from "@/components/admin/user-create"
 import {
   fetchUsers,
   updateUserStatus,
@@ -23,6 +24,8 @@ import {
   type UserManagement,
 } from "@/lib/api/users"
 import UserEditModal from "@/components/admin/user-edit"
+import { createUser } from "@/lib/api/users"
+import { Button } from "@/components/ui/button"
 
 export default function UsersPage() {
   const router = useRouter()
@@ -122,6 +125,7 @@ export default function UsersPage() {
 
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserManagement | null>(null)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   const handleCloseEdit = () => {
     setIsEditOpen(false)
@@ -139,6 +143,24 @@ export default function UsersPage() {
     } catch (err) {
       toast.error('Cập nhật người dùng thất bại')
       console.error('Error updating user:', err)
+      return false
+    }
+  }
+
+  const handleCreateUser = async (payload: { email: string; username: string; password: string; status?: "active" | "suspended" | "pending"; role?: string }) => {
+    try {
+      const res = await createUser({ email: payload.email, username: payload.username, password: payload.password, status: payload.status })
+      if (res.success) {
+        await loadUsers({ page: pagination.page, per_page: pagination.per_page, keyword: currentFilters.keyword, status: currentFilters.status })
+        toast.success("Tạo người dùng thành công")
+        return true
+      } else {
+        toast.error(res.message || "Tạo người dùng thất bại")
+        return false
+      }
+    } catch (err) {
+      toast.error("Tạo người dùng thất bại")
+      console.error("Error creating user:", err)
       return false
     }
   }
@@ -171,8 +193,9 @@ export default function UsersPage() {
   return (
     <>
       {/* Breadcrumb + Page Title */}
-      <div className="flex flex-col gap-2 px-4 pt-4">
-        <Breadcrumb>
+      <div className="flex justify-between gap-2 px-4 pt-4">
+        <div>
+          <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink href="/admin">Dashboard</BreadcrumbLink>
@@ -186,12 +209,16 @@ export default function UsersPage() {
         <h1 className="text-lg font-semibold tracking-tight">
           Quản lý người dùng
         </h1>
+        </div>
+                  <Button onClick={() => setIsCreateOpen(true)}>Thêm người dùng</Button>
+
       </div>
 
       {/* Content */}
       <div className="flex flex-1 flex-col gap-4 p-4">
-        {/* Search and Filters */}
-        <UsersFilters onSearch={handleSearch} isLoading={loading} />
+          <UsersFilters onSearch={handleSearch} isLoading={loading} />
+
+        {/* Search and Filters moved above with button */}
         
         {error && (
           <div className="rounded-md bg-red-50 p-4 text-red-800 border border-red-200">
@@ -224,6 +251,7 @@ export default function UsersPage() {
         )}
       </div>
   <UserEditModal open={isEditOpen} onClose={handleCloseEdit} user={editingUser ?? undefined} onSave={handleSaveUser} />
+  <UserCreateModal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} onCreate={handleCreateUser} />
     </>
   )
 }

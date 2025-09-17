@@ -11,9 +11,10 @@ import { useRouter } from "next/navigation"
 interface TutorCardProps {
   tutor: Tutor
   showBookButton?: boolean
+  onBook?: (tutor: Tutor) => void
 }
 
-export function TutorCard({ tutor, showBookButton = false }: TutorCardProps) {
+export function TutorCard({ tutor, showBookButton = false, onBook }: TutorCardProps) {
   const router = useRouter()
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -62,8 +63,13 @@ export function TutorCard({ tutor, showBookButton = false }: TutorCardProps) {
             </div>
 
             {showBookButton && (
-              <Button className="w-full" onClick={() => router.push(`/student/bookings?with_tutor=${tutor.id}`)}>
-                Xem hồ sơ & Đặt lịch
+              <Button
+                className="w-full"
+                onClick={() =>
+                  onBook ? onBook(tutor) : router.push(`/student/bookings?with_tutor=${tutor.id}`)
+                }
+              >
+                Đặt lịch ngay
               </Button>
             )}
           </div>

@@ -92,43 +92,6 @@ export default function StudentProfilePage() {
         setRecentBookings(response.data.bookings)
         setTotalBookings(response.data.total)
 
-        // Fetch tutor and subject details for these bookings
-        const tutorIds = [...new Set(response.data.bookings.map(b => b.tutor_id))]
-        const subjectIds = [...new Set(response.data.bookings.map(b => b.subject_id))]
-
-        // Fetch tutors
-        const tutorPromises = tutorIds.map(async (id) => {
-          try {
-            const tutorResponse = await TutorAPI.getTutorById(id)
-            if (tutorResponse.success) {
-              return [id, tutorResponse.data.tutor] as [number, Tutor]
-            }
-          } catch (error) {
-            console.error(`Error fetching tutor ${id}:`, error)
-          }
-          return [id, { id, name: 'Unknown', email: '' }] as [number, Tutor]
-        })
-
-        // Fetch subjects
-        const subjectPromises = subjectIds.map(async (id) => {
-          try {
-            const subjectResponse = await SubjectAPI.getSubjectById(id)
-            if (subjectResponse.success) {
-              return [id, subjectResponse.data.subject] as [number, Subject]
-            }
-          } catch (error) {
-            console.error(`Error fetching subject ${id}:`, error)
-          }
-          return [id, { id, name: 'Unknown' }] as [number, Subject]
-        })
-
-        const [tutorResults, subjectResults] = await Promise.all([
-          Promise.all(tutorPromises),
-          Promise.all(subjectPromises)
-        ])
-
-        setTutors(new Map(tutorResults))
-        setSubjects(new Map(subjectResults))
         setHasFetched(true)
       } else {
         setError(
@@ -252,15 +215,12 @@ export default function StudentProfilePage() {
                 {recentBookings.length > 0 ? (
                   <>
                     {recentBookings.map((booking) => {
-                      const tutor = tutors.get(booking.tutor_id)
-                      const subject = subjects.get(booking.subject_id)
-                      const tutorName = tutor?.name || tutor?.email || 'Unknown'
-                      const subjectName = subject?.name || subject?.code || 'Unknown'
+                  
                       return (
                         <div key={booking.id} className="flex justify-between items-center p-3 border rounded-lg">
                           <div>
-                            <p className="font-medium">{tutorName}</p>
-                            <p className="text-sm text-muted-foreground">{subjectName}</p>
+                            <p className="font-medium">{booking.tutor?.full_name || 'Unknown'}</p>
+                            <p className="text-sm text-muted-foreground">{booking.subject?.name || 'Unknown'}</p>
                             <p className="text-sm">{formatDateTime(booking.start_at)}</p>
                           </div>
                           {getStatusBadge(booking.status)}

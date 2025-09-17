@@ -13,8 +13,16 @@ import { TutorCard } from "@/components/tutor-card"
 import { fetchSubjects, type ApiSubject } from "@/lib/api/subjects"
 import { TutorAPI } from "@/lib/api/tutors"
 import type { Tutor as MockTutor } from "@/lib/mock-data"
+import { useSession } from "next-auth/react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { BookingAPI } from "@/lib/api/bookings"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 export default function FindTutorPage() {
+  const router = useRouter()
+  const { data: session } = useSession()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedSubject, setSelectedSubject] = useState("all")
   const [minRate, setMinRate] = useState("")
@@ -25,6 +33,16 @@ export default function FindTutorPage() {
   const [tutors, setTutors] = useState<MockTutor[]>([])
   const [loadingTutors, setLoadingTutors] = useState(false)
   const [tutorsError, setTutorsError] = useState<string | null>(null)
+
+  // Quick book dialog state
+  const [quickBookOpen, setQuickBookOpen] = useState(false)
+  const [bookingTutor, setBookingTutor] = useState<MockTutor | null>(null)
+  const [bookingSubjectId, setBookingSubjectId] = useState<string>("")
+  const [bookingStart, setBookingStart] = useState<string>("")
+  const [bookingEnd, setBookingEnd] = useState<string>("")
+  const [bookingLoading, setBookingLoading] = useState(false)
+  const [bookingServiceId, setBookingServiceId] = useState<number | null>(1)
+  const [bookingError, setBookingError] = useState<string | null>(null)
 
   // Fetch subjects from API
   useEffect(() => {
@@ -243,13 +261,164 @@ export default function FindTutorPage() {
         ) : tutorsError ? (
           <div className="col-span-full text-center py-8 text-destructive">{tutorsError}</div>
         ) : tutors.length > 0 ? (
-          tutors.map((tutor) => <TutorCard key={tutor.id} tutor={tutor} showBookButton />)
+          tutors.map((tutor) => (
+            <TutorCard
+              key={tutor.id}
+              tutor={tutor}
+              showBookButton
+              onBook={async (t) => {
+                setBookingTutor(t)
+                setBookingError(null)
+                setBookingServiceId(1)
+                // preselect subject if filter chosen
+                if (selectedSubject !== "all") {
+                  const subj = subjects.find((s) => s.name === selectedSubject)
+                  setBookingSubjectId(subj ? String(subj.id) : "")
+                } else if (t.subjects && t.subjects.length > 0) {
+                  // Try to match first subject name to id list
+                  const subj = subjects.find((s) => s.name === t.subjects[0])
+                  setBookingSubjectId(subj ? String(subj.id) : "")
+                } else {
+                  setBookingSubjectId("")
+                }
+                // default time: now to +1 hour in local timezone as ISO without seconds
+                const now = new Date()
+                const in1h = new Date(now.getTime() + 60 * 60 * 1000)
+                const toLocalInput = (d: Date) => {
+                  const pad = (n: number) => String(n).padStart(2, "0")
+                  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+                }
+                setBookingStart(toLocalInput(now))
+                setBookingEnd(toLocalInput(in1h))
+                // fetch tutor services to get a valid service_id
+                try {
+                  const svc = await TutorAPI.getTutorServices(Number(t.id))
+                  const first = svc?.data?.services?.find((s) => s.active)
+                  if (first) setBookingServiceId(first.id)
+                } catch (e) {
+                  // silently ignore; backend will use default rate if needed
+                }
+                setQuickBookOpen(true)
+              }}
+            />
+          ))
         ) : (
           <div className="col-span-full text-center py-8">
             <p className="text-muted-foreground">Không tìm thấy gia sư phù hợp với tiêu chí tìm kiếm</p>
           </div>
         )}
       </div>
+
+      {/* Quick Book Dialog */}
+      <Dialog open={quickBookOpen} onOpenChange={setQuickBookOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Đặt lịch nhanh {bookingTutor ? `với ${bookingTutor.name}` : ""}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {bookingError && (
+              <p className="text-sm text-destructive">{bookingError}</p>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Môn học</Label>
+                <Select value={bookingSubjectId} onValueChange={setBookingSubjectId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn môn học" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Bắt đầu</Label>
+                <Input type="datetime-local" value={bookingStart} onChange={(e) => setBookingStart(e.target.value)} />
+              </div>
+              <div>
+                <Label>Kết thúc</Label>
+                <Input type="datetime-local" value={bookingEnd} onChange={(e) => setBookingEnd(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setQuickBookOpen(false)} disabled={bookingLoading}>
+              Hủy
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!bookingTutor) return
+                if (!bookingSubjectId) {
+                  setBookingError("Vui lòng chọn môn học")
+                  return
+                }
+                if (!bookingStart || !bookingEnd) {
+                  setBookingError("Vui lòng chọn thời gian bắt đầu/kết thúc")
+                  return
+                }
+                const start = new Date(bookingStart)
+                const end = new Date(bookingEnd)
+                if (end <= start) {
+                  setBookingError("Thời gian kết thúc phải sau thời gian bắt đầu")
+                  return
+                }
+                // if (!bookingServiceId) {
+                //   setBookingError("Gia sư chưa có dịch vụ khả dụng. Vui lòng thử gia sư khác hoặc liên hệ hỗ trợ.")
+                //   return
+                // }
+                const studentId = session?.user?.id ? parseInt(String(session.user.id)) : undefined
+                if (!studentId) {
+                  setBookingError("Bạn cần đăng nhập để đặt lịch")
+                  return
+                }
+                try {
+                  setBookingLoading(true)
+                  setBookingError(null)
+                  const payload = {
+                    tutor_id: parseInt(String(bookingTutor.id)),
+                    service_id: 1,
+                    subject_id: parseInt(bookingSubjectId),
+                    start_at: start.toISOString(),
+                    end_at: end.toISOString(),
+                  }
+                  const resp = await BookingAPI.createBooking(payload, studentId)
+                  if (resp.success) {
+                    setQuickBookOpen(false)
+                    toast.success("Tạo booking thành công!")
+                    // Reset form
+                    setBookingTutor(null)
+                    setBookingSubjectId("")
+                    setBookingStart("")
+                    setBookingEnd("")
+                    setBookingServiceId(null)
+                    setBookingError(null)
+                    // Optionally, you might want to redirect to bookings page or booking details
+                    // Optional: redirect to bookings page
+                    router.push('/student/bookings')
+                  } else {
+                    setBookingError(resp.message || "Không thể tạo booking")
+                  }
+                } catch (e: any) {
+                  setBookingError(e?.message || "Có lỗi khi tạo booking")
+                } finally {
+                  setBookingLoading(false)
+                }
+              }}
+              disabled={bookingLoading}
+            >
+              {bookingLoading ? (
+                <span className="inline-flex items-center"><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Đang tạo...</span>
+              ) : (
+                "Đặt lịch"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

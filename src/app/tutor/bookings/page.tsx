@@ -50,24 +50,8 @@ export default function BookingsPage() {
           total_pages: response.data.total_pages
         }))
 
-        // Fetch tutor and subject details
-        const tutorIds = [...new Set(response.data.bookings.map(b => b.tutor_id))]
+        // Subjects: still fetch if needed
         const subjectIds = [...new Set(response.data.bookings.map(b => b.subject_id))]
-
-        // Fetch tutors
-        const tutorPromises = tutorIds.map(async (id) => {
-          try {
-            const tutorResponse = await TutorAPI.getTutorById(id)
-            if (tutorResponse.success) {
-              return [id, tutorResponse.data.tutor] as [number, Tutor]
-            }
-          } catch (error) {
-            console.error(`Error fetching tutor ${id}:`, error)
-          }
-          return [id, { id, name: 'Unknown', email: '' }] as [number, Tutor]
-        })
-
-        // Fetch subjects
         const subjectPromises = subjectIds.map(async (id) => {
           try {
             const subjectResponse = await SubjectAPI.getSubjectById(id)
@@ -80,12 +64,7 @@ export default function BookingsPage() {
           return [id, { id, name: 'Unknown' }] as [number, Subject]
         })
 
-        const [tutorResults, subjectResults] = await Promise.all([
-          Promise.all(tutorPromises),
-          Promise.all(subjectPromises)
-        ])
-
-        setTutors(new Map(tutorResults))
+        const subjectResults = await Promise.all(subjectPromises)
         setSubjects(new Map(subjectResults))
       } else {
         setError(response.message || 'Failed to fetch bookings')
@@ -213,12 +192,12 @@ export default function BookingsPage() {
                 </TableHeader>
                 <TableBody>
                   {bookings.map((booking) => {
-                    const tutor = tutors.get(booking.tutor_id)
+                    const tutorName = booking.tutor?.full_name || 'Unknown'
                     const subject = subjects.get(booking.subject_id)
                     return (
                       <TableRow key={booking.id}>
                         <TableCell className="font-medium">{booking.id}</TableCell>
-                        <TableCell>{tutor?.username || 'Loading...'}</TableCell>
+                        <TableCell>{tutorName}</TableCell>
                         <TableCell>{subject?.name || 'Loading...'}</TableCell>
                         <TableCell>{formatDateTime(booking.start_at)}</TableCell>
                         <TableCell>{formatDateTime(booking.end_at)}</TableCell>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,24 +8,21 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Loader2, RefreshCw } from "lucide-react"
 import { BookingAPI, type Booking } from "@/lib/api/bookings"
-import { TutorAPI, type Tutor } from "@/lib/api/tutors"
-import { SubjectAPI, type Subject } from "@/lib/api/subjects"
 
 export default function BookingsPage() {
   const { data: session } = useSession()
   const [bookings, setBookings] = useState<Booking[]>([])
-  const [tutors, setTutors] = useState<Map<number, Tutor>>(new Map())
-  const [subjects, setSubjects] = useState<Map<number, Subject>>(new Map())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
     per_page: 10,
     total: 0,
-    total_pages: 0
+    total_pages: 0,
   })
 
   const currentStudent = session?.user
+  const didFetch = useRef(false)
 
   const fetchBookings = async () => {
     if (!currentStudent?.id) return
@@ -34,71 +31,39 @@ export default function BookingsPage() {
       setError(null)
 
       const response = await BookingAPI.getBookings({
-        user_type: 'student',
+        user_type: "student",
         user_id: parseInt(currentStudent.id),
         page: pagination.page,
-        per_page: pagination.per_page
+        per_page: pagination.per_page,
       })
 
       if (response.success) {
         setBookings(response.data.bookings)
-        setPagination(prev => ({
+        setPagination((prev) => ({
           ...prev,
           total: response.data.total,
-          total_pages: response.data.total_pages
+          total_pages: response.data.total_pages,
         }))
 
-        // Fetch tutor and subject details
-        const tutorIds = [...new Set(response.data.bookings.map(b => b.tutor_id))]
-        const subjectIds = [...new Set(response.data.bookings.map(b => b.subject_id))]
-
-        // Fetch tutors
-        const tutorPromises = tutorIds.map(async (id) => {
-          try {
-            const tutorResponse = await TutorAPI.getTutorById(id)
-            if (tutorResponse.success) {
-              return [id, tutorResponse.data.tutor] as [number, Tutor]
-            }
-          } catch (error) {
-            console.error(`Error fetching tutor ${id}:`, error)
-          }
-          return [id, { id, name: 'Unknown', email: '' }] as [number, Tutor]
-        })
-
-        // Fetch subjects
-        const subjectPromises = subjectIds.map(async (id) => {
-          try {
-            const subjectResponse = await SubjectAPI.getSubjectById(id)
-            if (subjectResponse.success) {
-              return [id, subjectResponse.data.subject] as [number, Subject]
-            }
-          } catch (error) {
-            console.error(`Error fetching subject ${id}:`, error)
-          }
-          return [id, { id, name: 'Unknown' }] as [number, Subject]
-        })
-
-        const [tutorResults, subjectResults] = await Promise.all([
-          Promise.all(tutorPromises),
-          Promise.all(subjectPromises)
-        ])
-
-        setTutors(new Map(tutorResults))
-        setSubjects(new Map(subjectResults))
+       
       } else {
-        setError(response.message || 'Failed to fetch bookings')
+        setError(response.message || "Failed to fetch bookings")
       }
     } catch (err) {
-      setError('An error occurred while fetching bookings')
-      console.error('Error fetching bookings:', err)
+      setError("An error occurred while fetching bookings")
+      console.error("Error fetching bookings:", err)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
+    if (!currentStudent?.id) return
+    if (didFetch.current) return
+    didFetch.current = true
     fetchBookings()
-  }, [pagination.page])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.page, currentStudent?.id])
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -123,14 +88,13 @@ export default function BookingsPage() {
     try {
       const response = await BookingAPI.cancelBooking(bookingId)
       if (response.success) {
-        // Refresh bookings list
         fetchBookings()
       } else {
-        setError(response.message || 'Failed to cancel booking')
+        setError(response.message || "Failed to cancel booking")
       }
     } catch (err) {
-      setError('An error occurred while canceling booking')
-      console.error('Error canceling booking:', err)
+      setError("An error occurred while canceling booking")
+      console.error("Error canceling booking:", err)
     }
   }
 
@@ -189,7 +153,7 @@ export default function BookingsPage() {
         <CardHeader>
           <CardTitle>Lịch sử booking</CardTitle>
           <CardDescription>
-            Tổng cộng: {pagination.total} booking{pagination.total !== 1 ? 's' : ''}
+            Tổng cộng: {pagination.total} booking{pagination.total !== 1 ? "s" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -211,20 +175,18 @@ export default function BookingsPage() {
                 </TableHeader>
                 <TableBody>
                   {bookings.map((booking) => {
-                    const tutor = tutors.get(booking.tutor_id)
-                    const subject = subjects.get(booking.subject_id)
                     return (
                       <TableRow key={booking.id}>
                         <TableCell className="font-medium">{booking.id}</TableCell>
-                        <TableCell>{tutor?.username || 'Loading...'}</TableCell>
-                        <TableCell>{subject?.name || 'Loading...'}</TableCell>
+                        <TableCell>{booking.tutor?.full_name || "Loading..."}</TableCell>
+                        <TableCell>{booking.subject?.name || "Loading..."}</TableCell>
                         <TableCell>{formatDateTime(booking.start_at)}</TableCell>
                         <TableCell>{formatDateTime(booking.end_at)}</TableCell>
                         <TableCell>{booking.hours}h</TableCell>
                         <TableCell>{getStatusBadge(booking.status)}</TableCell>
                         <TableCell>{formatCurrency(booking.total_amount)}</TableCell>
                         <TableCell>
-                          {booking.status === 'Pending' && (
+                          {booking.status === "Pending" && (
                             <Button
                               onClick={() => handleCancelBooking(booking.id)}
                               variant="destructive"
@@ -240,7 +202,6 @@ export default function BookingsPage() {
                 </TableBody>
               </Table>
 
-              {/* Pagination */}
               {pagination.total_pages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-muted-foreground">
@@ -248,7 +209,9 @@ export default function BookingsPage() {
                   </p>
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                      onClick={() =>
+                        setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
+                      }
                       disabled={pagination.page <= 1}
                       variant="outline"
                       size="sm"
@@ -256,7 +219,9 @@ export default function BookingsPage() {
                       Trước
                     </Button>
                     <Button
-                      onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                      onClick={() =>
+                        setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
+                      }
                       disabled={pagination.page >= pagination.total_pages}
                       variant="outline"
                       size="sm"

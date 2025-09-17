@@ -1,5 +1,26 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
+export interface StudentProfileLite {
+  id: number
+  full_name: string
+  dob?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface TutorProfileLite {
+  id: number
+  full_name: string
+  bio?: string | null
+  years_experience?: number | null
+  hourly_rate?: number | null
+  verification_status?: string | null
+  rating_avg?: number | null
+  rating_count?: number | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
 export interface Booking {
   id: number
   student_id: number
@@ -13,6 +34,9 @@ export interface Booking {
   status: string
   created_at: string
   updated_at: string
+  student?: StudentProfileLite | null
+  tutor?: TutorProfileLite | null
+  subject?: { id: number; name: string } | null
 }
 
 export interface BookingListResponse {
@@ -91,11 +115,11 @@ export class BookingAPI {
   static async createBooking(data: CreateBookingRequest, studentId: number): Promise<BookingDetailsResponse> {
     const response = await fetch(`${API_BASE_URL}/bookings/`, {
       method: 'POST',
+      mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
-        'X-Student-ID': studentId.toString(),
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({  ...data, student_id: studentId }),
     })
 
     if (!response.ok) {

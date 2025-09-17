@@ -103,6 +103,7 @@ export function convertApiUserToUserManagement(apiUser: ApiUser): UserManagement
   return {
     id: apiUser.id.toString(),
     name: apiUser.username || apiUser.email.split('@')[0] || 'N/A',
+    username: apiUser.username ?? null,
     email: apiUser.email,
     role: apiUser.role || 'student', // Default role, you might want to add role field to API
     status: apiUser.status,
@@ -146,5 +147,40 @@ export async function deleteUser(userId: string): Promise<boolean> {
   } catch (err) {
     console.error('Error deleting user:', err)
     return false
+  }
+}
+
+export interface CreateUserRequest {
+  email: string
+  username: string
+  password: string
+  status?: "active" | "suspended" | "pending"
+}
+
+export async function createUser(payload: CreateUserRequest): Promise<{
+  success: boolean
+  message?: string
+}> {
+  try {
+    const body = {
+      email: payload.email,
+      username: payload.username,
+      password: payload.password,
+      // backend expects lower-case values for status per enum values
+      status: payload.status ?? "pending",
+    }
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+    const result = await response.json()
+    return { success: !!result.success, message: result.message }
+  } catch (err) {
+    console.error('Error creating user:', err)
+    return { success: false, message: (err as Error)?.message }
   }
 }
