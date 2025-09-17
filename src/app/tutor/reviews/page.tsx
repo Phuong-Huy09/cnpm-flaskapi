@@ -27,7 +27,7 @@ export default function ReviewsPage() {
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Đánh giá gia sư</h1>
+        <h1 className="text-2xl font-bold mb-2">Đánh giá gia sư</h1>
         <p className="text-muted-foreground">
           Viết đánh giá và xem lại các đánh giá đã gửi
         </p>

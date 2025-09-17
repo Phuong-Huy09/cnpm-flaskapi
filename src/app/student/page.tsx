@@ -11,10 +11,7 @@ import { Star, Loader2 } from "lucide-react"
 import { BookingAPI, type Booking } from "@/lib/api/bookings"
 import { TutorAPI, type Tutor } from "@/lib/api/tutors"
 import { SubjectAPI, type Subject } from "@/lib/api/subjects"
-import {
-  mockTutors,
-  mockReviews,
-} from "@/lib/mock-data"
+import { ReviewAPI, type Review } from "@/lib/api/reviews"
 
 export default function StudentProfilePage() {
   const { data: session } = useSession()
@@ -26,11 +23,47 @@ export default function StudentProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [totalBookings, setTotalBookings] = useState(0)
   const [hasFetched, setHasFetched] = useState(false)
+  const [studentReviews, setStudentReviews] = useState<Review[]>([])
+  const [hasFetchedReviews, setHasFetchedReviews] = useState(false)
 
   const currentStudent = session?.user
 
-  // Mock data for reviews (since we don't have reviews API yet)
-  const studentReviews = mockReviews.filter((r) => r.studentId === "student1")
+  // Fetch student's reviews from backend
+  const fetchStudentReviews = async () => {
+    try {
+      if (!currentStudent?.id) return
+      const res = await ReviewAPI.getReviews({
+        student_id: parseInt(currentStudent.id),
+        page: 1,
+        per_page: 5,
+      })
+      if (res.success && res.data && Array.isArray(res.data.reviews)) {
+        setStudentReviews(res.data.reviews)
+
+        // Prefetch tutor info for these reviews (merge with existing map)
+        const reviewTutorIds = Array.from(new Set(res.data.reviews.map(r => r.tutor_id)))
+        const missingTutorIds = reviewTutorIds.filter(id => !tutors.has(id))
+        if (missingTutorIds.length) {
+          const tutorPairs = await Promise.all(missingTutorIds.map(async (id) => {
+            try {
+              const tRes = await TutorAPI.getTutorById(id)
+              if (tRes.success) {
+                return [id, tRes.data.tutor as Tutor] as [number, Tutor]
+              }
+            } catch (e) {
+              console.error(`Error prefetching tutor ${id} for reviews:`, e)
+            }
+            return [id, { id, name: 'Unknown', email: '' } as Tutor] as [number, Tutor]
+          }))
+          setTutors(prev => new Map([...prev, ...tutorPairs]))
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching reviews:', e)
+    } finally {
+      setHasFetchedReviews(true)
+    }
+  }
 
   const fetchRecentBookings = async () => {
     try {
@@ -120,6 +153,12 @@ export default function StudentProfilePage() {
     }
   }, [currentStudent?.id, hasFetched])
 
+  useEffect(() => {
+    if (currentStudent?.id && !hasFetchedReviews) {
+      fetchStudentReviews()
+    }
+  }, [currentStudent?.id, hasFetchedReviews])
+
   const getStatusBadge = (status: string) => {
     const variants = {
       Pending: "secondary",
@@ -138,7 +177,7 @@ export default function StudentProfilePage() {
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Hồ sơ học viên</h1>
+        <h1 className="text-2xl font-bold mb-2">Hồ sơ học viên</h1>
         <p className="text-muted-foreground">
           Chào mừng {currentStudent?.name || currentStudent?.email}! Quản lý thông tin cá nhân của bạn
         </p>
@@ -254,29 +293,37 @@ export default function StudentProfilePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {studentReviews.slice(0, 5).map((review) => {
-                const tutor = mockTutors.find((t) => t.id === review.tutorId)
-                return (
-                  <div key={review.id} className="p-3 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <p className="font-medium">{tutor?.name}</p>
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-                          />
-                        ))}
+              {studentReviews.length > 0 ? (
+                <>
+                  {studentReviews.slice(0, 5).map((review) => {
+                    const tutor = tutors.get(review.tutor_id)
+                    return (
+                      <div key={review.id} className="p-3 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="font-medium">{tutor?.name || tutor?.email || tutor?.username || 'Unknown'}</p>
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{review.comment}</p>
                       </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{review.comment}</p>
-                  </div>
-                )
-              })}
-              {studentReviews.length > 5 && (
-                <Button variant="outline" className="w-full">
-                  Xem tất cả ({studentReviews.length} đánh giá)
-                </Button>
+                    )
+                  })}
+                  {studentReviews.length > 5 && (
+                    <Button variant="outline" className="w-full">
+                      Xem tất cả ({studentReviews.length} đánh giá)
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">Bạn chưa có đánh giá nào</p>
+                </div>
               )}
             </div>
           </CardContent>

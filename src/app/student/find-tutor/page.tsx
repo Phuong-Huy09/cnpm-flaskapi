@@ -110,7 +110,7 @@ export default function FindTutorPage() {
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Tìm gia sư</h1>
+        <h1 className="text-2xl font-bold mb-2">Tìm gia sư</h1>
         <p className="text-muted-foreground">
           Tìm kiếm gia sư phù hợp với nhu cầu học tập của bạn
         </p>

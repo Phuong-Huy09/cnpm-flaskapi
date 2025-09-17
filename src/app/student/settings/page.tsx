@@ -14,7 +14,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Cài đặt</h1>
+        <h1 className="text-2xl font-bold mb-2">Cài đặt</h1>
         <p className="text-muted-foreground">
           Quản lý thông tin tài khoản và tùy chọn cá nhân
         </p>
