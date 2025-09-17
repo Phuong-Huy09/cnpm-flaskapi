@@ -76,7 +76,13 @@ export default function FindTutorPage() {
             name: t.full_name || "",
             avatar: "/placeholder.svg",
             bio: t.bio || "",
-            subjects: t.subjects || [],
+            subjects: Array.isArray(t.subjects)
+              ? t.subjects.map((s: any) =>
+                  typeof s === "string"
+                    ? s
+                    : s?.name || s?.subject_name || s?.title || ""
+                ).filter((s: string) => s && s.length > 0)
+              : [],
             hourlyRate: Number(t.hourly_rate || t.hourlyRate || 0),
             rating: Number(t.rating_avg || t.rating || 0),
             reviewCount: Number(t.rating_count || t.reviewCount || 0),
@@ -86,6 +92,43 @@ export default function FindTutorPage() {
           })) as MockTutor[]
 
           setTutors(mapped)
+
+          // Enrich subjects for tutors missing them by calling per-tutor subjects API
+          const tutorsNeedingSubjects = mapped.filter((t) => !t.subjects || t.subjects.length === 0)
+          if (tutorsNeedingSubjects.length > 0) {
+            try {
+              const results = await Promise.all(
+                tutorsNeedingSubjects.map(async (t) => {
+                  try {
+                    const subResp = await TutorAPI.getTutorSubjects(Number(t.id))
+                    if (subResp?.success && subResp.data?.subjects) {
+                      const names = subResp.data.subjects
+                        .map((s) => s?.name)
+                        .filter((n): n is string => Boolean(n))
+                      return { id: t.id, subjects: names }
+                    }
+                  } catch (e) {
+                    console.warn("Failed to fetch subjects for tutor", t.id, e)
+                  }
+                  return { id: t.id, subjects: [] as string[] }
+                })
+              )
+
+              if (results.length > 0) {
+                setTutors((prev) =>
+                  prev.map((pt) => {
+                    const found = results.find((r) => r.id === pt.id)
+                    if (found && found.subjects.length > 0) {
+                      return { ...pt, subjects: found.subjects }
+                    }
+                    return pt
+                  })
+                )
+              }
+            } catch (e) {
+              console.warn("Subject enrichment failed", e)
+            }
+          }
         } else if (resp && resp.data && resp.data.tutors) {
           setTutors(resp.data.tutors)
         } else {
@@ -200,7 +243,7 @@ export default function FindTutorPage() {
         ) : tutorsError ? (
           <div className="col-span-full text-center py-8 text-destructive">{tutorsError}</div>
         ) : tutors.length > 0 ? (
-          tutors.map((tutor) => <TutorCard key={tutor.id} tutor={tutor} />)
+          tutors.map((tutor) => <TutorCard key={tutor.id} tutor={tutor} showBookButton />)
         ) : (
           <div className="col-span-full text-center py-8">
             <p className="text-muted-foreground">Không tìm thấy gia sư phù hợp với tiêu chí tìm kiếm</p>

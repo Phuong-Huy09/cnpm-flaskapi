@@ -62,4 +62,15 @@ export class TutorAPI {
 
     return response.json()
   }
+
+  static async getTutorSubjects(tutorId: number): Promise<{ success: boolean; data?: { subjects: Array<{ id: number; name: string; level?: string }> } }> {
+    const response = await fetch(`${API_BASE_URL}/tutors/${tutorId}/subjects`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+    return response.json()
+  }
 }

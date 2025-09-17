@@ -1,9 +1,12 @@
+"use client"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Star, Clock, BookOpen } from "lucide-react"
 import type { Tutor } from "@/lib/mock-data"
+import { useRouter } from "next/navigation"
 
 interface TutorCardProps {
   tutor: Tutor
@@ -11,6 +14,7 @@ interface TutorCardProps {
 }
 
 export function TutorCard({ tutor, showBookButton = false }: TutorCardProps) {
+  const router = useRouter()
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
@@ -57,7 +61,11 @@ export function TutorCard({ tutor, showBookButton = false }: TutorCardProps) {
               </div>
             </div>
 
-            {showBookButton && <Button className="w-full">Xem hồ sơ & Đặt lịch</Button>}
+            {showBookButton && (
+              <Button className="w-full" onClick={() => router.push(`/student/bookings?with_tutor=${tutor.id}`)}>
+                Xem hồ sơ & Đặt lịch
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>
