@@ -26,25 +26,20 @@ import {
 
 const navigationItems = [
   {
-    href: "/student",
+    href: "/tutor",
     label: "Hồ sơ",
     icon: User,
   },
   {
     href: "/tutor/bookings",
-    label: "Quản lý JOB",
+    label: "Quản lý buổi dạy",
     icon: Calendar,
   },
   {
     href: "/tutor/chat",
     label: "Chat",
     icon: MessageCircle,
-  },
-  {
-    href: "/student/reviews",
-    label: "Đánh giá",
-    icon: Star,
-  },
+  }
 ]
 
 export function StudentHeader() {

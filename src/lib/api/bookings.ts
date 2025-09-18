@@ -175,6 +175,21 @@ export class BookingAPI {
     return response.json()
   }
 
+  static async acceptBooking(id: number): Promise<BookingDetailsResponse> {
+    const response = await fetch(`${API_BASE_URL}/bookings/${id}/accept`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
   static async deleteBooking(id: number): Promise<{ success: boolean; message: string }> {
     const response = await fetch(`${API_BASE_URL}/bookings/${id}`, {
       method: 'DELETE',

@@ -32,10 +32,10 @@ const navData = {
     {
       title: "Menu",
       items: [
-        { title: "Quản lí người dùng", url: "/admin/users", icon: Users },
-        { title: "Quản lí Môn học", url: "/admin/subjects", icon: BookOpen },
-        { title: "Quản lí booking", url: "/admin/bookings", icon: CalendarCheck },
-        { title: "Quản lí đánh giá", url: "/admin/reviews", icon: Star },
+        { title: "Quản lý người dùng", url: "/admin/users", icon: Users },
+        { title: "Quản lý Môn học", url: "/admin/subjects", icon: BookOpen },
+        { title: "Quản lý booking", url: "/admin/bookings", icon: CalendarCheck },
+        { title: "Quản lý đánh giá", url: "/admin/reviews", icon: Star },
         { title: "Cài đặt hệ thống", url: "/admin/settings", icon: Settings },
       ],
     },

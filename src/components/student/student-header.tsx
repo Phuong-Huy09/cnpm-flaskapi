@@ -70,7 +70,7 @@ export function StudentHeader() {
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <div className="font-bold text-xl">TutorApp</div>
-            <Badge variant="secondary">Gia sư</Badge>
+            <Badge variant="secondary">Học viên</Badge>
           </div>
 
           {/* Navigation */}
